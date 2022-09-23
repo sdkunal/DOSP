@@ -16,7 +16,7 @@ repeat(Num) ->
     end.
 
 start() ->
-    repeat(1000).
+    repeat(100000).
 
 
 
