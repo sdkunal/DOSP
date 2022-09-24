@@ -1,17 +1,51 @@
 -module(bitcoinSimulator).
--import(string, [len/1, substr/3, equal/2]).
--export([bitcoin/0, start/0, hashComparison/2, sha/2, get_random_string/2, repeat/1]).
+-import(string, [equal/2, substr/3]).
+-export([start/0, spawner/2, master/2, bitcoin/0, repeat/1, sha/2, get_random_string/2]).
 
-repeat(Num) ->
-    %io:fwrite(integer_to_list(Num)),
-    case Num > 0 of
+start() ->
+    First_Pid = spawn(bitcoinSimulator, bitcoin, []),
+    spawner(4, First_Pid).
+
+spawner(NumActors, First_Pid) ->
+    case NumActors > 0 of
         true ->
-            sha(get_random_string(6, "abcdefghijklmnopqrstuvwxyz0123456789"), 1),
-            %sha(curStr,3),
-            % io:fwrite("\n"),
-            repeat(Num - 1);
+            spawn(bitcoinSimulator, master, [1, First_Pid]),
+            spawner(NumActors - 1, First_Pid);
         false ->
             ""
+    end.
+
+master(0, First_Pid) ->
+    First_Pid ! {stop},
+    io:fwrite("Master Finished\n");
+master(N, First_Pid) ->
+    First_Pid ! {hash, self()},
+    receive
+        {masterfunction} ->
+            io:fwrite("Master function\n")
+    end,
+    master(N - 1, First_Pid).
+
+bitcoin() ->
+    receive
+        {stop} ->
+            io:fwrite("Bitcoin stop\n");
+        {hash, Second_Pid} ->
+            repeat(1000),
+            Second_Pid ! {masterfunction},
+            bitcoin()
+        % Other ->
+        %     Pid ! {self(), Other},
+        %     bitcoin()
+    end.
+
+repeat(Num) ->
+    case Num > 0 of
+        true ->
+            sha(get_random_string(6, "abcdefghijklmnopqrstuvwxyz0123456789"), 2),
+            repeat(Num - 1);
+        false ->
+            io:fwrite("Repeat finished\n")
     end.
 
 sha(Str, Zeros) ->
@@ -19,18 +53,22 @@ sha(Str, Zeros) ->
         element(C + 1, {$0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $A, $B, $C, $D, $E, $F})
      || <<C:4>> <= crypto:hash(sha256, Str)
     ],
-    Str1 = lists:flatten(lists:duplicate(Zeros, "0")),
-    Str2 = substr(EncrytedStr, 1, Zeros),
-    Status = equal(Str1, Str2),
+    ZerosString = lists:flatten(lists:duplicate(Zeros, "0")),
+    EncryptedStart = substr(EncrytedStr, 1, Zeros),
+    Status = equal(ZerosString, EncryptedStart),
     if
         Status ->
-            io:fwrite(integer_to_list(Zeros) ++ "\t" ++ Str ++ "\t" ++ EncrytedStr ++ "\n");
+            io:fwrite(
+                "~p" ++ " -- " ++ integer_to_list(Zeros) ++ " -- " ++ Str ++ " -- " ++ EncrytedStr ++
+                    "\n",
+                [self()]
+            );
         true ->
             ""
     end.
 
 get_random_string(Length, AllowedChars) ->
-    Str2 =
+    BCoin =
         "kdudhe:" ++
             lists:foldl(
                 fun(_, Acc) ->
@@ -39,25 +77,4 @@ get_random_string(Length, AllowedChars) ->
                 [],
                 lists:seq(1, Length)
             ),
-    Str2.
-
-bitcoin() ->
-    receive
-        {From, {}} ->
-            From ! {self(), repeat(100)},
-            bitcoin();
-        {From, {stop}} ->
-            From ! {self(), "Stopping~n"};
-        {From, Other} ->
-            From ! {self(), Other},
-            bitcoin()
-    end.
-
-start() ->
-    spawn(fun() -> bitcoin() end).
-
-hashComparison(Pid, Request) ->
-    Pid ! {self(), Request},
-    receive
-        {Pid, Response} -> Response
-    end.
+    BCoin.
