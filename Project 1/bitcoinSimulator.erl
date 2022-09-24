@@ -3,23 +3,30 @@
 -export([start/0, spawner/2, master/2, bitcoin/0, repeat/1, sha/2, get_random_string/2]).
 
 start() ->
-    First_Pid = spawn(bitcoinSimulator, bitcoin, []),
-    spawner(4, First_Pid).
+    % master pid
+    spawn(bitcoinSimulator, spawner, [4, self()]).
+% spawner(4, First_Pid).
 
 spawner(NumActors, First_Pid) ->
     case NumActors > 0 of
         true ->
-            spawn(bitcoinSimulator, master, [1, First_Pid]),
+            spawn(bitcoinSimulator, bitcoin, []),
             spawner(NumActors - 1, First_Pid);
         false ->
             ""
+    end.
+
+masterStart() ->
+    receive
+        finished ->
+            io:format("Master finished~n")
     end.
 
 master(0, First_Pid) ->
     First_Pid ! {stop},
     io:fwrite("Master Finished\n");
 master(N, First_Pid) ->
-    First_Pid ! {hash, self()},
+    % First_Pid ! {hash, self()},
     receive
         {masterfunction} ->
             io:fwrite("Master function\n")
