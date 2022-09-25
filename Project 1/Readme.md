@@ -24,11 +24,22 @@ To simulate the working of a distributed system, we used Erlang's actor model wh
 
 ### Size Of Work Unit
 
+Process of execution:
+<ul>
+  <li>The server starts an actor which starts mining coins by sending the number of hashed strings to be computed to the client.</li>
+  <li>The worker actor computes the number of hashes and sends the result back to the server which, in turn, prints the hash results on the server console.</li>
+  <li>During this entire process the worker actors stay in communication with the server's actor.</li>
+</ul>
 
+We computed SHA256 hash for 6,000,000 strings each on the client and the server.<br>
+Both client and server are 8 core machines; the server spawned 8 actors while the client spawned 4 actors.<br>
+The coin mining was equally divided between all the workers.<br>
+Each actor on the client was working on 1,500,000 strings while each actor on the server worked on 750,000 strings.<br>
+The timer was started as soon as the server started and it ended when the last actor finished mining coins.<br>
 
 ### Searching For A String With 4 Leading Zeros
 
-The result obtained when the number of leading zeros to be comapred is 4 is as follows:
+The result obtained when the number of leading zeros to be compared is 4 is as follows:
 
 <img width="1084" alt="Result For Input 4" src="https://user-images.githubusercontent.com/89472838/192120508-089875e9-632b-4057-a131-cf57a034f277.png">
 
@@ -63,15 +74,15 @@ Total time = End Time - Start Time<br>
 Total Time = 16035612 microsceonds = 16.035612 seconds<br>
 
 Ratio of CPU time to Real time = $\frac{Total time taken by multi-actor implementation}{Total time taken by single actor implementation}$<br>
-Ratio of CPU time to Real time = $\frac{16.035612}{67.787615}$<br>
-Ratio of CPU time to Real time = 0.236557<br>
+Ratio of CPU time to Real time = $\frac{67.787615}{16.035612}$<br>
+Ratio of CPU time to Real time = 4.227317<br>
 
 This shows that when 6 actors are spawned as workers, it trumps the single actor implemenetation in terms of time by a factor of 4.<br>
 
 ### Coin With Most Leading Zeros
 
 The coin with the most leading zeros we managed to find was 7.<br>
-The server spawned 8 actors to find the hashed value with mosted leading zeros.<br>
+The server spawned 8 actors to find the hashed value with most leading zeros.<br>
 
 <img width="927" alt="Max Number of Zeros Found" src="https://user-images.githubusercontent.com/89472838/192122190-83c2422f-4b1a-4e7d-98ad-5328afaae182.png">
 
