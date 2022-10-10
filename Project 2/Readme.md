@@ -1,4 +1,4 @@
-# COP 5615: Distributed Operating System Principles Project 2
+# Project 2 - Gossip Algorithm
 
 ## Group Members
 
