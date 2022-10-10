@@ -1,4 +1,4 @@
-# COP 5615: Distributed Operating System Principles Project 1
+# Project 1 - Bitcoin Miner
 
 ## Group Members
 
