@@ -17,6 +17,11 @@
     spawn2D/4,
     initiate2D/3,
     spread2DRumor/3,
+    start3D/2,
+    create3DList/3,
+    spawn3D/4,
+    initiate3D/3,
+    spread3DRumor/3,
     processKiller/1,
     checkIfEqual/2
 ]).
@@ -45,6 +50,10 @@ start2D(NumNodes, NumCols) ->
     List = create2DList(1, NumNodes, NumCols),
     nth(1, List) ! {receiveRumour, List}.
 
+start3D(NumNodes, NumCols) ->
+    List = create3DList(1, NumNodes, NumCols),
+    nth(1, List) ! {receiveRumour, List}.
+
 createFullList(S, E) ->
     spawnFull(S, E, []).
 
@@ -53,6 +62,9 @@ createLineList(S, E) ->
 
 create2DList(S, E, NumCols) ->
     spawn2D(S, E, NumCols, []).
+
+create3DList(S, E, NumCols) ->
+    spawn3D(S, E, NumCols, []).
 
 spawnFull(S, E, L) ->
     case S =< E of
@@ -82,6 +94,19 @@ spawn2D(S, E, NumCols, L) ->
                 E,
                 NumCols,
                 lists:append([L, [spawn(server, initiate2D, ["This is a rumor", 1, NumCols])]])
+            );
+        false ->
+            L
+    end.
+
+spawn3D(S, E, NumCols, L) ->
+    case S =< E of
+        true ->
+            spawn3D(
+                S + 1,
+                E,
+                NumCols,
+                lists:append([L, [spawn(server, initiate3D, ["This is a rumor", 1, NumCols])]])
             );
         false ->
             L
@@ -135,6 +160,22 @@ initiate2D(Rumor, Count, NumCols) ->
             io:format("~p Stopping~n", [self()])
     end.
 
+initiate3D(Rumor, Count, NumCols) ->
+    receive
+        {receiveRumour, List} ->
+            io:format("~p ~p ~n", [self(), Rumor]),
+            io:format("~p Count: ~n", [Count]),
+            if
+                Count == 5 ->
+                    processKiller(self());
+                true ->
+                    spread3DRumor(List, self(), NumCols),
+                    initiate3D(Rumor, Count + 1, NumCols)
+            end;
+        stop ->
+            io:format("~p Stopping~n", [self()])
+    end.
+
 spreadFullRumor(Nodes, NumNodes, List, Rumor, CurrPID) ->
     case NumNodes > 0 of
         true ->
@@ -165,15 +206,15 @@ spreadLineRumor(List, CurrPID) ->
 
 spread2DRumor(List, CurrPID, NumCols) ->
     Index = string:str(List, [CurrPID]),
-    case Index + 3 =< length(List) of
+    case Index + NumCols =< length(List) of
         true ->
-            nth(Index + 3, List) ! {receiveRumour, List};
+            nth(Index + NumCols, List) ! {receiveRumour, List};
         false ->
             ""
     end,
-    case Index - 3 >= 1 of
+    case Index - NumCols >= 1 of
         true ->
-            nth(Index - 3, List) ! {receiveRumour, List};
+            nth(Index - NumCols, List) ! {receiveRumour, List};
         false ->
             ""
     end,
@@ -198,6 +239,103 @@ spread2DRumor(List, CurrPID, NumCols) ->
                     nth(Index + 1, List) ! {receiveRumour, List},
                     nth(Index - 1, List) ! {receiveRumour, List}
             end
+    end.
+
+spread3DRumor(List, CurrPID, NumCols) ->
+    Index = string:str(List, [CurrPID]),
+    case Index + NumCols =< length(List) of
+        true ->
+            nth(Index + NumCols, List) ! {receiveRumour, List};
+        false ->
+            ""
+    end,
+    case Index - NumCols >= 1 of
+        true ->
+            nth(Index - NumCols, List) ! {receiveRumour, List};
+        false ->
+            ""
+    end,
+    case Index rem NumCols == 1 of
+        true ->
+            case Index + 1 =< length(List) of
+                true ->
+                    nth(Index + 1, List) ! {receiveRumour, List};
+                false ->
+                    ""
+            end,
+            case Index + NumCols + 1 =< length(List) of
+                true ->
+                    nth(Index + NumCols + 1, List) ! {receiveRumour, List};
+                false ->
+                    ""
+            end,
+            case Index - NumCols + 1 >= 1 of
+                true ->
+                    nth(Index - NumCols + 1, List) ! {receiveRumour, List};
+                false ->
+                    ""
+            end;
+        false ->
+            case Index rem NumCols == 0 of
+                true ->
+                    case Index - 1 >= 1 of
+                        true ->
+                            nth(Index - 1, List) ! {receiveRumour, List};
+                        false ->
+                            ""
+                    end,
+                    case Index + NumCols - 1 =< length(List) of
+                        true ->
+                            nth(Index + NumCols - 1, List) ! {receiveRumour, List};
+                        false ->
+                            ""
+                    end,
+                    case Index - NumCols - 1 >= 1 of
+                        true ->
+                            nth(Index - NumCols - 1, List) ! {receiveRumour, List};
+                        false ->
+                            ""
+                    end;
+                false ->
+                    nth(Index + 1, List) ! {receiveRumour, List},
+                    nth(Index - 1, List) ! {receiveRumour, List},
+                    case Index + NumCols + 1 =< length(List) of
+                        true ->
+                            nth(Index + NumCols + 1, List) ! {receiveRumour, List};
+                        false ->
+                            ""
+                    end,
+                    case Index - NumCols + 1 >= 1 of
+                        true ->
+                            nth(Index - NumCols + 1, List) ! {receiveRumour, List};
+                        false ->
+                            ""
+                    end,
+                    case Index + NumCols - 1 =< length(List) of
+                        true ->
+                            nth(Index + NumCols - 1, List) ! {receiveRumour, List};
+                        false ->
+                            ""
+                    end,
+                    case Index - NumCols - 1 >= 1 of
+                        true ->
+                            nth(Index - NumCols - 1, List) ! {receiveRumour, List};
+                        false ->
+                            ""
+                    end
+            end
+    end,
+    RandIndex = nth(1, [rand:uniform(length(List)) || _ <- lists:seq(1, 1)]),
+    case RandIndex >= 1 of
+        true ->
+            case RandIndex =< length(List) of
+                true ->
+                    nth(RandIndex, List) ! {receiveRumour, List};
+                false ->
+                    ""
+            end;
+        false ->
+            ""
     end.
 
 checkIfEqual(PID1, PID2) ->
