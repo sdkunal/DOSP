@@ -1,5 +1,5 @@
 -module(server).
--import(lists, [nth/2]).
+-import(lists, [nth/2, seq/2, append/1, last/1]).
 -export([
     startFull/1,
     createFullList/2,
@@ -27,17 +27,27 @@
 ]).
 
 startFull(NumNodes) ->
-    List = createFullList(1, NumNodes),
-    RandList = [rand:uniform(NumNodes) || _ <- lists:seq(1, NumNodes div 10)],
-    Curr = nth(1, RandList),
-    randomize(RandList, 1, List, NumNodes, Curr).
+    case NumNodes >= 10 of
+        true ->
+            List = createFullList(1, NumNodes),
+            RandList = [rand:uniform(NumNodes) || _ <- seq(1, NumNodes div 10)],
+            Curr = nth(1, RandList),
+            randomize(RandList, 1, List, NumNodes, Curr);
+        false ->
+            io:format("Please enter a number greater than 10.~n", [])
+    end.
 
 randomize(RandList, Index, List, NumNodes, Curr) ->
     case Index =< length(RandList) of
         true ->
             nth(Curr, List) ! {receiveRumour, List, NumNodes},
-            Curr2 = nth(Index + 1, RandList),
-            randomize(RandList, Index + 1, List, NumNodes, Curr2);
+            case Index + 1 =< length(RandList) of
+                true ->
+                    Curr2 = nth(Index + 1, RandList),
+                    randomize(RandList, Index + 1, List, NumNodes, Curr2);
+                false ->
+                    ""
+            end;
         false ->
             ""
     end.
@@ -70,7 +80,7 @@ spawnFull(S, E, L) ->
     case S =< E of
         true ->
             spawnFull(
-                S + 1, E, lists:append([L, [spawn(server, initiateFull, ["This is a rumor", 1])]])
+                S + 1, E, append([L, [spawn(server, initiateFull, ["This is a rumor", 1])]])
             );
         false ->
             L
@@ -80,7 +90,7 @@ spawnLine(S, E, L) ->
     case S =< E of
         true ->
             spawnLine(
-                S + 1, E, lists:append([L, [spawn(server, initiateLine, ["This is a rumor", 1])]])
+                S + 1, E, append([L, [spawn(server, initiateLine, ["This is a rumor", 1])]])
             );
         false ->
             L
@@ -93,7 +103,7 @@ spawn2D(S, E, NumCols, L) ->
                 S + 1,
                 E,
                 NumCols,
-                lists:append([L, [spawn(server, initiate2D, ["This is a rumor", 1, NumCols])]])
+                append([L, [spawn(server, initiate2D, ["This is a rumor", 1, NumCols])]])
             );
         false ->
             L
@@ -106,7 +116,7 @@ spawn3D(S, E, NumCols, L) ->
                 S + 1,
                 E,
                 NumCols,
-                lists:append([L, [spawn(server, initiate3D, ["This is a rumor", 1, NumCols])]])
+                append([L, [spawn(server, initiate3D, ["This is a rumor", 1, NumCols])]])
             );
         false ->
             L
@@ -195,7 +205,7 @@ spreadLineRumor(List, CurrPID) ->
         true ->
             nth(2, List) ! {receiveRumour, List};
         false ->
-            case checkIfEqual(CurrPID, lists:last(List)) of
+            case checkIfEqual(CurrPID, last(List)) of
                 true ->
                     nth(length(List) - 1, List) ! {receiveRumour, List};
                 false ->
@@ -325,7 +335,7 @@ spread3DRumor(List, CurrPID, NumCols) ->
                     end
             end
     end,
-    RandIndex = nth(1, [rand:uniform(length(List)) || _ <- lists:seq(1, 1)]),
+    RandIndex = nth(1, [rand:uniform(length(List)) || _ <- seq(1, 1)]),
     case RandIndex >= 1 of
         true ->
             case RandIndex =< length(List) of
