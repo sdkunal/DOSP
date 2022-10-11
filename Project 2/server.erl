@@ -210,7 +210,7 @@ initiateFull(Rumor, Count, S, W, AlgoName, Counter) ->
             NewRatio = NewS / NewW,
             io:format("~p Ratio ~n", [NewRatio]),
             io:format("~p Counter ~n", [Counter]),
-            case abs(OldRatio - NewRatio) =< 0.00001 of
+            case abs(OldRatio - NewRatio) =< 0.0001 of
                 true ->
                     Counter2 = Counter + 1,
                     if
@@ -252,7 +252,7 @@ initiateLine(Rumor, Count, S, W, AlgoName, Counter) ->
             NewRatio = NewS / NewW,
             io:format("~p Ratio ~n", [NewRatio]),
             io:format("~p Counter ~n", [Counter]),
-            case abs(OldRatio - NewRatio) =< 0.00001 of
+            case abs(OldRatio - NewRatio) =< 0.0001 of
                 true ->
                     Counter2 = Counter + 1,
                     if
@@ -292,7 +292,7 @@ initiate2D(Rumor, Count, NumCols, S, W, AlgoName, Counter) ->
             NewRatio = NewS / NewW,
             io:format("~p Ratio ~n", [NewRatio]),
             io:format("~p Counter ~n", [Counter]),
-            case abs(OldRatio - NewRatio) =< 0.00001 of
+            case abs(OldRatio - NewRatio) =< 0.0001 of
                 true ->
                     Counter2 = Counter + 1,
                     if
@@ -332,7 +332,7 @@ initiate3D(Rumor, Count, NumCols, S, W, AlgoName, Counter) ->
             NewRatio = NewS / NewW,
             io:format("~p Ratio ~n", [NewRatio]),
             io:format("~p Counter ~n", [Counter]),
-            case abs(OldRatio - NewRatio) =< 0.00001 of
+            case abs(OldRatio - NewRatio) =< 0.0001 of
                 true ->
                     Counter2 = Counter + 1,
                     if
