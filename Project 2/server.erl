@@ -1,12 +1,12 @@
 -module(server).
 -import(lists, [nth/2, seq/2, append/1, last/1]).
 -export([
-    startFull/1,
-    createFullList/2,
-    spawnFull/3,
-    initiateFull/2,
-    spreadFullRumor/5,
-    randomize/5,
+    startFull/2,
+    createFullList/3,
+    spawnFull/4,
+    initiateFull/6,
+    spreadFullRumor/8,
+    randomize/6,
     startLine/1,
     createLineList/2,
     spawnLine/3,
@@ -26,30 +26,47 @@
     checkIfEqual/2
 ]).
 
-startFull(NumNodes) ->
+startFull(AlgoName, NumNodes) ->
     case NumNodes >= 10 of
         true ->
-            List = createFullList(1, NumNodes),
+            List = createFullList(1, NumNodes, AlgoName),
             RandList = [rand:uniform(NumNodes) || _ <- seq(1, NumNodes div 10)],
             Curr = nth(1, RandList),
-            randomize(RandList, 1, List, NumNodes, Curr);
+            randomize(RandList, 1, List, NumNodes, Curr, AlgoName);
         false ->
             io:format("Please enter a number greater than 10.~n", [])
     end.
 
-randomize(RandList, Index, List, NumNodes, Curr) ->
-    case Index =< length(RandList) of
+randomize(RandList, Index, List, NumNodes, Curr, AlgoName) ->
+    case AlgoName == "Gossip" of 
         true ->
-            nth(Curr, List) ! {receiveRumour, List, NumNodes},
-            case Index + 1 =< length(RandList) of
+            case Index =< length(RandList) of
                 true ->
-                    Curr2 = nth(Index + 1, RandList),
-                    randomize(RandList, Index + 1, List, NumNodes, Curr2);
+                    nth(Curr, List) ! {receiveRumour, List, NumNodes},
+                    case Index + 1 =< length(RandList) of
+                        true ->
+                            Curr2 = nth(Index + 1, RandList),
+                            randomize(RandList, Index + 1, List, NumNodes, Curr2, AlgoName);
+                        false ->
+                            ""
+                    end;
                 false ->
                     ""
             end;
         false ->
-            ""
+            case Index =< length(RandList) of
+                true ->
+                    nth(Curr, List) ! {pushSumRumour, List, NumNodes},
+                    case Index + 1 =< length(RandList) of
+                        true ->
+                            Curr2 = nth(Index + 1, RandList),
+                            randomize(RandList, Index + 1, List, NumNodes, Curr2, AlgoName);
+                        false ->
+                            ""
+                    end;
+                false ->
+                    ""
+            end
     end.
 
 startLine(NumNodes) ->
@@ -64,8 +81,8 @@ start3D(NumNodes, NumCols) ->
     List = create3DList(1, NumNodes, NumCols),
     nth(1, List) ! {receiveRumour, List}.
 
-createFullList(S, E) ->
-    spawnFull(S, E, []).
+createFullList(S, E, AlgoName) ->
+    spawnFull(S, E, [], AlgoName).
 
 createLineList(S, E) ->
     spawnLine(S, E, []).
@@ -76,11 +93,11 @@ create2DList(S, E, NumCols) ->
 create3DList(S, E, NumCols) ->
     spawn3D(S, E, NumCols, []).
 
-spawnFull(S, E, L) ->
+spawnFull(S, E, L, AlgoName) ->
     case S =< E of
         true ->
             spawnFull(
-                S + 1, E, append([L, [spawn(server, initiateFull, ["This is a rumor", 1])]])
+                S + 1, E, append([L, [spawn(server, initiateFull, ["This is a rumor", 1, S, 1, AlgoName,0])]]), AlgoName
             );
         false ->
             L
@@ -122,7 +139,7 @@ spawn3D(S, E, NumCols, L) ->
             L
     end.
 
-initiateFull(Rumor, Count) ->
+initiateFull(Rumor, Count, S, W, AlgoName,Counter) ->
     receive
         {receiveRumour, List, NumNodes} ->
             io:format("~p ~p ~n", [self(), Rumor]),
@@ -131,9 +148,33 @@ initiateFull(Rumor, Count) ->
                 Count == 5 ->
                     processKiller(self());
                 true ->
-                    spreadFullRumor(length(List), NumNodes, List, Rumor, self()),
-                    initiateFull(Rumor, Count + 1)
+                    spreadFullRumor(length(List), NumNodes, List, Rumor, self(), S, W, AlgoName),
+                    initiateFull(Rumor, Count + 1, S, W, AlgoName, Counter)
             end;
+        {pushSumRumour, List, NumNodes} ->
+            spreadFullRumor(length(List), NumNodes, List, Rumor, self(), S div 2, W , AlgoName),
+            initiateFull(Rumor, Count + 1, S, W, AlgoName, Counter);
+        {pushSumRumour, List, NumNodes, SReceived, WReceived} ->
+            OldRatio = S / W,
+            NewS = S + SReceived,
+            NewW = W + WReceived,
+            NewRatio = NewS / NewW,
+            io:format("~p Ratio- ~n",[NewRatio]),
+            io:format("~p Counter- ~n",[Counter]),
+            case abs(OldRatio - NewRatio) =< 1 of
+                true ->
+                    Counter2=Counter+1,
+                    if
+                        Counter2==3->
+                            processKiller(self());
+                        true->
+                            ""
+                    end;
+                false ->
+                    Counter2=0
+            end,
+            spreadFullRumor(length(List), NumNodes, List, Rumor, self(), NewS div 2, NewW div 2, AlgoName),
+            initiateFull(Rumor, Count + 1, S, W, AlgoName, Counter2);
         stop ->
             io:format("~p Stopping~n", [self()])
     end.
@@ -186,15 +227,20 @@ initiate3D(Rumor, Count, NumCols) ->
             io:format("~p Stopping~n", [self()])
     end.
 
-spreadFullRumor(Nodes, NumNodes, List, Rumor, CurrPID) ->
+spreadFullRumor(Nodes, NumNodes, List, Rumor, CurrPID, S, W, AlgoName) ->
     case NumNodes > 0 of
         true ->
             case checkIfEqual(CurrPID, nth(NumNodes, List)) of
                 true ->
-                    spreadFullRumor(Nodes, NumNodes - 1, List, Rumor, CurrPID);
+                    spreadFullRumor(Nodes, NumNodes - 1, List, Rumor, CurrPID, S, W, AlgoName);
                 false ->
-                    nth(NumNodes, List) ! {receiveRumour, List, Nodes},
-                    spreadFullRumor(Nodes, NumNodes - 1, List, Rumor, CurrPID)
+                    case AlgoName == "Gossip" of
+                        true ->
+                            nth(NumNodes, List) ! {receiveRumour, List, Nodes};
+                        false ->
+                            nth(NumNodes, List) ! {pushSumRumour, List, Nodes, S, W}
+                    end,
+                    spreadFullRumor(Nodes, NumNodes - 1, List, Rumor, CurrPID, S, W, AlgoName)
             end;
         false ->
             ""
