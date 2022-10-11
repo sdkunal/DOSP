@@ -23,13 +23,23 @@ The 4 network topologies we build are: <br>
 ### Implementation Details
 
 <ul>
-  <li>Compile client.erl <b>c(client).</b> and server.erl <b>c(server).</b></li>
-  <li>Run server.erl by running separate functions created for each network topology
+  <li>Compile project2.erl <b>c(server).</b></li>
+  <li>Run project2.erl by running separate functions created for each network topology</li>
+   <li>For running gossip algorithm  
       <ul>
-        <li> Full Network - server:startFull(NumNodes)</li>
-        <li> Line - server:startLine(NumNodes)</li>
-        <li> 2D Grid - server:start2D(NumNodes,NumCols)</li>
-        <li> Imperfect 3D Grid - server:start3D(NumNodes,NumCols)</li>
+        <li> Full Network - server:startFull(“Gossip”,NumNodes)</li>
+        <li> Line - server:startLine(“Gossip”,NumNodes)</li>
+        <li> 2D Grid - server:start2D(“Gossip”,NumNodes,NumCols)</li>
+        <li> Imperfect 3D Grid - server:start3D(“Gossip”,NumNodes,NumCols)</li>
       </ul>
-  </li> 
+  </li>
+  <li>For running push-sum algorithm  
+      <ul>
+        <li> Full Network - server:startFull(“PushSum”,NumNodes)</li>
+        <li> Line - server:startLine(“PushSum”,NumNodes)</li>
+        <li> 2D Grid - server:start2D(“PushSum”,NumNodes,NumCols)</li>
+        <li> Imperfect 3D Grid - server:start3D(“PushSum”,NumNodes,NumCols)</li>
+      </ul>
+  </li>
+  
 </ul>
