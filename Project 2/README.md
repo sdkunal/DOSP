@@ -62,7 +62,7 @@ We could test the Imperfect 3D grid topology for 8000 nodes. The system crashed 
 Our experiment concludes that line topology converged the fastest for the Gossip algorithm.
 Here’s an example of the gossip algorithm converging for the full network topology with 10 nodes.
 
-<img width="564" alt="Screen Shot 2022-10-10 at 11 32 41 PM" src="https://user-images.githubusercontent.com/89472838/194993929-d56c249a-ab1b-4671-93a0-8f484aabc386.png">
+<img width="638" alt="Screen Shot 2022-10-10 at 11 41 40 PM" src="https://user-images.githubusercontent.com/89472838/194994008-36cc3995-3cd0-47c2-a62c-fad778344544.png">
 
 #### Push-Sum Algorithm
 
@@ -71,7 +71,7 @@ Line topology gave the worst results.
 Imperfect 3D grid topology performed almost as well as line and started diverging after we tested it for 36 nodes.
 The 2D grid topology converged after a long time, but it took less time than the line topology.
 
-<img width="638" alt="Screen Shot 2022-10-10 at 11 41 40 PM" src="https://user-images.githubusercontent.com/89472838/194994008-36cc3995-3cd0-47c2-a62c-fad778344544.png">
+<img width="564" alt="Screen Shot 2022-10-10 at 11 32 41 PM" src="https://user-images.githubusercontent.com/89472838/194993929-d56c249a-ab1b-4671-93a0-8f484aabc386.png">
 
 Here’s an example of the push-sum algorithm converging for the full network topology with 10 nodes.
 
