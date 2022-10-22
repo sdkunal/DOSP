@@ -3,4 +3,5 @@ Projects implemented as a part of COP5615 conducted at University of Florida in 
 <ul>
   <li>Project 1: Bitcoin Miner</li>
   <li>Project 2: Gossip Algorithm</li>
+  <li>Project 3: Chord</li>
 </ul>
