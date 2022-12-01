@@ -1,11 +1,22 @@
 -module(client).
 -import(server,[start/2]).
--export([initiateUser/3]).
+-export([initiateUser/3,startSimulation/2]).
 
 initiateUser(Uid,PPid,NumNodes)->
     PPid ! {makeOnline,Uid,self()},
     assignFollowers(Uid,PPid,NumNodes).
     % generateRandomTweets(Uid,PPid,NumNodes).
+
+startSimulation(Actor_List,PPid)->
+    Ops_List=["tweet","go_offline","go_online","follow"],
+    io:format("starting simulation: ~n",[]),
+    Op_idx=rand:uniform(4),
+    Operation=lists:nth(Op_idx,Ops_List),
+    io:format("Operation selected: ~p ~n",[Operation]),
+    goOffline(PPid,2).
+
+goOffline(PPid,Uid)->
+    PPid ! {go_offline,Uid}.
 
 assignFollowers(Uid,PPid,NumNodes)->
     NumFollowers=rand:uniform(NumNodes-2)+1,

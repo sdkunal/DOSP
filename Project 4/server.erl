@@ -1,5 +1,5 @@
 -module(server).
--import(client,[initiateUser/3]).
+-import(client,[initiateUser/3,startSimulation/2]).
 -import(lists,[nth/2,append/1]).
 -export([start/2,generateActors/4,createList/2,createNewList/3,simulator/1,takeOnline/2,replacenth/3]).
 -record(user, {id,followers=[],following=[],tweet=[],mentions=[],status=false}). 
@@ -9,10 +9,11 @@ start(NumNodes,NumTweets)->
     % Actor_List=generateActors(1,NumNodes,self()),
     Actor_List=generate(1,NumNodes,self()),
     io:format("Actor_List: ~p ~n",[Actor_List]),
-    io:format("Self: ~p ~n",[self()]),
-    List = createList(1, NumNodes),
-    io:format("List: ~p ~n",[List]),
-    simulator(List).
+    % io:format("Self: ~p ~n",[self()]),
+    Record_List = createList(1, NumNodes),
+    spawn(client,startSimulation,[Actor_List,self()]),
+    % io:format("List: ~p ~n",[List]),
+    simulator(Record_List).
     % P=#user{id=1,followers=[1,2,3],following=[4,5],tweet=["abc","xyz"],mentions=["mention1","mention2"],status=true},
 
 generate(S,E,PPid)->
@@ -28,24 +29,24 @@ simulator(List)->
             List1=takeOnline(List,Uid),
             simulator(List1);
         {setFollowers,Uid,FollowerList}->
-            io:format("Followers assigned to ~p ~n",[Uid]),
+            io:format("Followers ~p assigned to ~p ~n",[FollowerList,Uid]),
             List1=addFollowers(Uid,FollowerList,List),
-            io:format("List with followers: ~p ~n",[List1]),
+            % io:format("List with followers: ~p ~n",[List1]),
             % List2=addToFollowing(Uid,FollowerList,List1),
             Length=length(FollowerList),
             List2=addToFollowing(Uid,FollowerList,List1,1,Length),
-            % io:format("Final List: ~p ~n",[List2]),
-            simulator(List2)
+            %io:format("Final List: ~p ~n",[List2]),
+            simulator(List2);
+        {go_offline,Uid}->
+            List1=takeOffline(List,Uid),
+            io:format("After offline List: ~p ~n",[List1]),
+            simulator(List1)
     end.
 
-helper(Elem,List,Uid)->
-    P=nth(Elem,List),
-    TempList=P#user.following,
-    P1 = P#user{following = lists:append(TempList,[Uid])},
-    replacenth(List,Elem,P1).
-
-helper2()->
-    io:format("Dummy print: ~n",[]).
+takeOffline(List,Uid)->
+    P=nth(Uid,List),
+    P1 = P#user{status = false},
+    replacenth(List,Uid,P1).
 
 addToFollowing(Uid,FollowerList,List,S,Length)->
     case S=<Length of
