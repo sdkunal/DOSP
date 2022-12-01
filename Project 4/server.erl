@@ -1,50 +1,86 @@
 -module(server).
--import(client,[initiateUser/1]).
--export([start/2,generateActors/2]).
--record(user, {id,followers = [],following=[],tweet=[],mentions=[],status}). 
+-import(client,[initiateUser/3]).
+-import(lists,[nth/2,append/1]).
+-export([start/2,generateActors/3,createList/2,createNewList/3,simulator/1,takeOnline/2,replacenth/3]).
+-record(user, {id,followers=[],following=[],tweet=[],mentions=[],status=false}). 
 
 start(NumNodes,NumTweets)->
     io:format("Num Nodes: ~p NumTweets: ~p ~n",[NumNodes,NumTweets]),
-    % generateActors(1,NumNodes).
-    P=#user{id=1,followers=[1,2,3],following=[4,5],tweet=["abc","xyz"],mentions=["mention1","mention2"],status=true},
-    io:fwrite("~p~n",[P#user.id]),
-    io:fwrite("~p~n",[P#user.followers]),
-    io:fwrite("~p~n",[P#user.following]),
-    io:fwrite("~p~n",[P#user.tweet]),
-    io:fwrite("~p~n",[P#user.mentions]),
-    io:fwrite("~p~n",[P#user.status]).
+    generateActors(1,NumNodes,self()),
+    io:format("Self: ~p ~n",[self()]),
+    List = createList(1, NumNodes),
+    io:format("List: ~p ~n",[List]),
+    simulator(List).
+    % P=#user{id=1,followers=[1,2,3],following=[4,5],tweet=["abc","xyz"],mentions=["mention1","mention2"],status=true},
+    
+simulator(List)->
+    receive
+        {addFollowers}->
+            io:format("in simulator: ~p ~n",[self()]),
+            simulator(List);
+        {makeOnline,Uid,Pid}->
+            io:format("Actor ~p is in online state with PID ~p ~n",[Uid,Pid]),
+            List1=takeOnline(List,Uid),
+            simulator(List1);
+        {setFollowers,Uid,FollowerList}->
+            io:format("Followers assigned to ~p ~n",[Uid]),
+            List1=addFollowers(Uid,FollowerList,List),
+            io:format("List with followers: ~p ~n",[List1]),
+            % List2=addToFollowing(Uid,FollowerList,List1),
+            simulator(List1)
+    end.
 
-generateActors(S,E)-> %E is numNodes
+
+helper(Elem,List,Uid)->
+    P=nth(Elem,List),
+    TempList=P#user.following,
+    P1 = P#user{following = lists:append(TempList,[Uid])},
+    replacenth(List,Elem,P1).
+
+helper2()->
+    io:format("Dummy print: ~n",[]).
+
+addToFollowing(Uid,FollowerList,List)->
+    Function =  fun(Elem) -> 
+                    % helper(Elem,List,Uid)
+                    helper2()
+                end,
+    lists:foreach(Function,FollowerList).
+
+addFollowers(Uid,FollowerList,List)->
+    P=nth(Uid,List),
+    P1 = P#user{followers = FollowerList},
+    replacenth(List,Uid,P1).
+
+takeOnline(List,Uid)->
+    P=nth(Uid,List),
+    P1 = P#user{status = true},
+    replacenth(List,Uid,P1).
+
+replacenth(L,Index,NewValue) -> 
+    {L1,[_|L2]} = lists:split(Index-1,L),
+    L1++[NewValue|L2].
+
+generateActors(S,E,PPid)-> %E is numNodes
     case S=<E of
         true->
-            spawn(client,initiateUser,[S]),
-            generateActors(S+1,E);
+            spawn(client,initiateUser,[S,PPid,E]),
+            generateActors(S+1,E,PPid);
         false->
             io:format("All actors generated ~n")
     end.
 
+createList(S, E) ->
+    createNewList(S, E, []).
 
-% actions list [tweet, retweet, follow, query hashtags, query mentions, query followed tweets]
-% offline, online actions
-% maintain status for each actor -> save data effectively for every actor -> 
-% assign IDs to user,manage PID and UID
-
-% what to store for an user
-% followers -> list will suffice
-% following -> list
-% tweet list -> list
-% mentions list -> list
-% status -> boolean
-
-
-%schema
-
-%UID - primary key
-
-
-
-%struct -> boolean, list, list, list, list 
-%[]
-
-% universal storage for hashtags
-
+createNewList(S, E, L) ->
+    case S =< E of
+        true ->
+            createNewList(
+                S + 1,
+                E,
+                append([L, [#user{id=S,followers=[],following=[],tweet=[],mentions=[],status=false}]])
+            );
+        false ->
+            L
+    end.
