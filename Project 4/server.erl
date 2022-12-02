@@ -26,7 +26,6 @@ start(NumNodes, NumTweets) ->
     spawn(client, startSimulation, [Actor_List, self(), 1]),
     % io:format("List: ~p ~n",[List]),
     simulator(Record_List, HashTags, NumTweets, 0).
-% P=#user{id=1,followers=[1,2,3],following=[4,5],tweet=["abc","xyz"],mentions=["mention1","mention2"],status=true},
 
 generate(S, E, PPid) ->
     generateActors(S, E, [], PPid).
@@ -39,7 +38,7 @@ simulator(List, HashTags, NumTweets, TotalTweets) ->
             CheckMember = lists:member(FollowUid, FollowerList),
             case CheckMember == false of
                 true ->
-                    % io:format("List before adding new followers: ~p ~n", [List]),
+                    io:format("Uid ~p is following ~p ~n", [FollowUid,Uid]),
                     List1 = addNewFollower(Uid, FollowUid, List),
                     List2 = addNewFollowing(Uid, FollowUid, List1),
                     % io:format("List after adding new followers and following: ~p ~n", [List2]),
@@ -56,15 +55,14 @@ simulator(List, HashTags, NumTweets, TotalTweets) ->
             List1 = addFollowers(Uid, FollowerList, List),
             Length = length(FollowerList),
             List2 = addToFollowing(Uid, FollowerList, List1, 1, Length),
-            %io:format("Final List: ~p ~n",[List2]),
             simulator(List2, HashTags, NumTweets, TotalTweets);
         {go_offline, Uid} ->
             List1 = takeOffline(List, Uid),
-            % io:format("After offline List: ~p ~n", [List1]),
+            io:format("Uid ~p goes offline~n", [Uid]),
             simulator(List1, HashTags, NumTweets, TotalTweets);
         {go_online, Uid} ->
             List1 = setOnline(List, Uid),
-            % io:format("After offline List: ~p ~n", [List1]),
+            io:format("Uid ~p goes online~n", [Uid]),
             simulator(List1, HashTags, NumTweets, TotalTweets);
         {postTweet, Uid, Tweet} ->
             List1 = postTweet(List, Uid, Tweet),
@@ -75,8 +73,10 @@ simulator(List, HashTags, NumTweets, TotalTweets) ->
             List2 = distributeTweet(List1, Uid, Tweet, FollowerList, 1, Length),
             ContainsHashTag = string:chr(Tweet, $#),
             ContainsMention = string:chr(Tweet, $@),
+            FirstSpace = string:chr(Tweet, $ ),
             case SumTotalTweets<NumTweets of
                 true->
+                    io:format("Uid ~p is tweeting~n", [Uid]),
                     case ContainsHashTag =/= 0 of
                         true ->
                             Start = ContainsHashTag + 1,
@@ -91,8 +91,8 @@ simulator(List, HashTags, NumTweets, TotalTweets) ->
                             case ContainsMention =/= 0 of
                                 true ->
                                     Start1 = ContainsMention + 1,
-                                    End1 = string:chr(Tweet, $\s),
-                                    MentionedUser = string:substr(Tweet, Start1, End1 - 1),
+                                    % End1 = string:chr(Tweet, $ ),
+                                    MentionedUser = string:substr(Tweet, Start1, FirstSpace - 1),
                                     UserMentioned = integer_to_list(MentionedUser),
                                     List3 = postMention(List2, UserMentioned, Tweet),
                                     simulator(List3, Map2, NumTweets, SumTotalTweets);
@@ -106,8 +106,9 @@ simulator(List, HashTags, NumTweets, TotalTweets) ->
                             case ContainsMention =/= 0 of
                                 true ->
                                     Start2 = ContainsMention + 1,
-                                    End2 = string:chr(Tweet, $\s),
-                                    MentionedUser = string:substr(Tweet, Start2, End2 - 1),
+                                    % End2 = string:chr(Tweet, $ ),
+                                    % NewEnd=End2-1,
+                                    MentionedUser = string:substr(Tweet, Start2, FirstSpace),
                                     UserMentioned = integer_to_list(MentionedUser),
                                     List3 = postMention(List2, UserMentioned, Tweet),
                                     simulator(List3, HashTags, NumTweets, SumTotalTweets);
@@ -115,19 +116,8 @@ simulator(List, HashTags, NumTweets, TotalTweets) ->
                                     simulator(List2, HashTags, NumTweets, SumTotalTweets)
                             end 
                     end;
-                    % case ContainsMention =/= 0 of
-                    %     true ->
-                    %         Start1 = ContainsMention + 1,
-                    %         End1 = string:chr(Tweet, $\s),
-                    %         MentionedUser = string:substr(Tweet, Start1, End1 - 1),
-                    %         UserMentioned = integer_to_list(MentionedUser),
-                    %         List3 = postMention(List2, UserMentioned, Tweet),
-                    %         simulator(List3, HashTags, NumTweets, SumTotalTweets);
-                    %     false ->
-                    %         simulator(List2, HashTags, NumTweets, SumTotalTweets)
-                    % end;
                 false->
-                    io:format("Terminating from post tweets as max limit ~p of tweets reached ~n", [SumTotalTweets])
+                    io:format("Terminating from post tweets as max limit ~p of tweets reached ~n", [NumTweets])
             end;
 
         {display_hashtags, Hash} ->
@@ -151,6 +141,7 @@ simulator(List, HashTags, NumTweets, TotalTweets) ->
             SumTotalTweets=Length+TotalTweets,
             case SumTotalTweets<NumTweets of
                 true->
+                    io:format("Uid ~p is retweeting~n", [Uid]),
                     case FeedListLength =/= 0 of
                         true ->
                             RandTweetIdx = rand:uniform(FeedListLength),
@@ -177,7 +168,7 @@ simulator(List, HashTags, NumTweets, TotalTweets) ->
                             simulator(List, HashTags, NumTweets, SumTotalTweets)
                     end;
                 false->
-                    io:format("Terminating from retweets as max limit ~p of tweets reached ~n", [SumTotalTweets])
+                    io:format("Terminating from retweets as max limit ~p of tweets reached ~n", [NumTweets])
             end
     end.
 

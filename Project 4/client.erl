@@ -4,7 +4,29 @@
 
 initiateUser(Uid, PPid, NumNodes) ->
     PPid ! {makeOnline, Uid, self()},
-    assignFollowers(Uid, PPid, NumNodes).
+    assignFollowersZipf(Uid, PPid, NumNodes).
+
+% initiateUser(Uid, PPid, NumNodes) ->
+%     PPid ! {makeOnline, Uid, self()},
+%     assignFollowers(Uid, PPid, NumNodes).
+
+assignFollowers(Uid, PPid, NumNodes) ->
+    NumFollowers = rand:uniform(NumNodes - 2) + 1,
+    List = [rand:uniform(NumNodes) || _ <- lists:seq(1, NumFollowers)],
+    List2 = checkList(List, Uid),
+    Set = ordsets:from_list(List2),
+    FollowerList = ordsets:to_list(Set),
+    PPid ! {setFollowers, Uid, FollowerList}.
+
+assignFollowersZipf(Uid, PPid, NumNodes) ->
+    Divisor=Uid+1,
+    NumFollowers = NumNodes div Divisor,
+    io:format("Number of followers for Uid ~p are: ~p ~n", [Uid,NumFollowers]),
+    List = [rand:uniform(NumNodes) || _ <- lists:seq(1, NumFollowers)],
+    List2 = checkList(List, Uid),
+    Set = ordsets:from_list(List2),
+    FollowerList = ordsets:to_list(Set),
+    PPid ! {setFollowers, Uid, FollowerList}.
 
 startSimulation(Actor_List, PPid, S) ->
     Ops_List = [
@@ -27,7 +49,7 @@ startSimulation(Actor_List, PPid, S) ->
             io:format("Operation selected: ~p ~n", [Operation]),
             case Operation == "tweet" of
                 true ->
-                    io:format("Uid ~p is tweeting~n", [RandomUid]),
+                    % io:format("Uid ~p is tweeting~n", [RandomUid]),
                     goOnline(PPid, RandomUid),
                     makeTweet(PPid, RandomUid, NumNodes);
                 false ->
@@ -163,14 +185,6 @@ goOffline(PPid, Uid) ->
 
 goOnline(PPid, Uid) ->
     PPid ! {go_online, Uid}.
-
-assignFollowers(Uid, PPid, NumNodes) ->
-    NumFollowers = rand:uniform(NumNodes - 2) + 1,
-    List = [rand:uniform(NumNodes) || _ <- lists:seq(1, NumFollowers)],
-    List2 = checkList(List, Uid),
-    Set = ordsets:from_list(List2),
-    FollowerList = ordsets:to_list(Set),
-    PPid ! {setFollowers, Uid, FollowerList}.
 
 checkList(List, Uid) ->
     Bool = lists:member(Uid, List),
