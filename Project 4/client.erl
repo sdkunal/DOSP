@@ -19,9 +19,9 @@ assignFollowers(Uid, PPid, NumNodes) ->
     PPid ! {setFollowers, Uid, FollowerList}.
 
 assignFollowersZipf(Uid, PPid, NumNodes) ->
-    Divisor=Uid+1,
+    Divisor = Uid + 1,
     NumFollowers = NumNodes div Divisor,
-    io:format("Number of followers for Uid ~p are: ~p ~n", [Uid,NumFollowers]),
+    io:format("Number of followers for Uid ~p are: ~p ~n", [Uid, NumFollowers]),
     List = [rand:uniform(NumNodes) || _ <- lists:seq(1, NumFollowers)],
     List2 = checkList(List, Uid),
     Set = ordsets:from_list(List2),

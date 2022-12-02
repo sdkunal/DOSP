@@ -38,7 +38,7 @@ simulator(List, HashTags, NumTweets, TotalTweets) ->
             CheckMember = lists:member(FollowUid, FollowerList),
             case CheckMember == false of
                 true ->
-                    io:format("Uid ~p is following ~p ~n", [FollowUid,Uid]),
+                    io:format("Uid ~p is following ~p ~n", [FollowUid, Uid]),
                     List1 = addNewFollower(Uid, FollowUid, List),
                     List2 = addNewFollowing(Uid, FollowUid, List1),
                     % io:format("List after adding new followers and following: ~p ~n", [List2]),
@@ -69,13 +69,13 @@ simulator(List, HashTags, NumTweets, TotalTweets) ->
             P = nth(Uid, List1),
             FollowerList = P#user.followers,
             Length = length(FollowerList),
-            SumTotalTweets=Length+TotalTweets,
+            SumTotalTweets = Length + TotalTweets,
             List2 = distributeTweet(List1, Uid, Tweet, FollowerList, 1, Length),
             ContainsHashTag = string:chr(Tweet, $#),
             ContainsMention = string:chr(Tweet, $@),
-            FirstSpace = string:chr(Tweet, $ ),
-            case SumTotalTweets<NumTweets of
-                true->
+            FirstSpace = string:chr(Tweet, $\s),
+            case SumTotalTweets < NumTweets of
+                true ->
                     io:format("Uid ~p is tweeting~n", [Uid]),
                     case ContainsHashTag =/= 0 of
                         true ->
@@ -114,12 +114,13 @@ simulator(List, HashTags, NumTweets, TotalTweets) ->
                                     simulator(List3, HashTags, NumTweets, SumTotalTweets);
                                 false ->
                                     simulator(List2, HashTags, NumTweets, SumTotalTweets)
-                            end 
+                            end
                     end;
-                false->
-                    io:format("Terminating from post tweets as max limit ~p of tweets reached ~n", [NumTweets])
+                false ->
+                    io:format("Terminating from post tweets as max limit ~p of tweets reached ~n", [
+                        NumTweets
+                    ])
             end;
-
         {display_hashtags, Hash} ->
             TweetList = maps:get(Hash, HashTags),
             io:format("Tweets with ~p hashtags: ~p ~n", [Hash, TweetList]),
@@ -138,9 +139,9 @@ simulator(List, HashTags, NumTweets, TotalTweets) ->
             FeedListLength = length(FeedList),
             FollowerList = P#user.followers,
             Length = length(FollowerList),
-            SumTotalTweets=Length+TotalTweets,
-            case SumTotalTweets<NumTweets of
-                true->
+            SumTotalTweets = Length + TotalTweets,
+            case SumTotalTweets < NumTweets of
+                true ->
                     io:format("Uid ~p is retweeting~n", [Uid]),
                     case FeedListLength =/= 0 of
                         true ->
@@ -167,8 +168,10 @@ simulator(List, HashTags, NumTweets, TotalTweets) ->
                             io:format("No tweets in feed to retweet~n", []),
                             simulator(List, HashTags, NumTweets, SumTotalTweets)
                     end;
-                false->
-                    io:format("Terminating from retweets as max limit ~p of tweets reached ~n", [NumTweets])
+                false ->
+                    io:format("Terminating from retweets as max limit ~p of tweets reached ~n", [
+                        NumTweets
+                    ])
             end
     end.
 
