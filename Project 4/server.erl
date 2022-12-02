@@ -82,12 +82,26 @@ simulator(List, HashTags) ->
                     TagList = maps:get(Tag, HashTags),
                     TagList2 = lists:append(TagList, [Tweet]),
                     Map2 = maps:put(Tag, TagList2, HashTags),
-                    io:format("Hashtags after update: ~p ~n", [Map2]),
+                    % io:format("Hashtags after update: ~p ~n", [Map2]),
+                    % io:format("List with hashtags: ~p ~n", [List2]),
                     simulator(List2, Map2);
                 false ->
-                    io:format("Hashtags without update: ~p ~n", [HashTags]),
+                    % io:format("Hashtags without update: ~p ~n", [HashTags]),
+                    % io:format("List without hashtags: ~p ~n", [List2]),
                     simulator(List2, HashTags)
-            end;
+            end,
+            ContainsMention=string:chr(Tweet,$@),
+            case ContainsMention =/= 0 of
+                true->
+                    Start1=ContainsMention+1,
+                    End1=string:chr(Tweet,$ ),
+                    MentionedUser=string:substr(Tweet,Start1,End1-1),
+                    UserMentioned=integer_to_list(MentionedUser),
+                    List3=postMention(List2,UserMentioned,Tweet),
+                    simulator(List3,HashTags);
+                false->
+                    simulator(List2,HashTags)
+            end;  
         {display_hashtags, Hash} ->
             TweetList = maps:get(Hash, HashTags),
             io:format("Tweets with ~p hashtags: ~p ~n", [Hash, TweetList]),
@@ -117,10 +131,10 @@ simulator(List, HashTags) ->
                             TagList = maps:get(Tag, HashTags),
                             TagList2 = lists:append(TagList, [RandTweet]),
                             Map2 = maps:put(Tag, TagList2, HashTags),
-                            io:format("Hashtags after update: ~p ~n", [Map2]),
+                            % io:format("Hashtags after update: ~p ~n", [Map2]),
                             simulator(List2, Map2);
                         false ->
-                            io:format("Hashtags without update: ~p ~n", [HashTags]),
+                            % io:format("Hashtags without update: ~p ~n", [HashTags]),
                             simulator(List2, HashTags)
                     end;
                 false ->
@@ -128,6 +142,13 @@ simulator(List, HashTags) ->
                     simulator(List, HashTags)
             end
     end.
+
+postMention(List, Uid, Tweet) ->
+    P = nth(Uid, List),
+    MentionList = P#user.mentions,
+    P1 = P#user{mentions = lists:append(MentionList, [Tweet])},
+    replacenth(List, Uid, P1).
+
 
 reTweeting(Uid, List, RandTweet) ->
     P = nth(Uid, List),

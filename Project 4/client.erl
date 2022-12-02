@@ -84,22 +84,34 @@ query_hashtags(Hash, PPid) ->
     PPid ! {display_hashtags, Hash}.
 
 makeTweet(PPid, Uid, NumNodes) ->
-    Tweet = generateRandomTweets(Uid, PPid, NumNodes),
-    PPid ! {postTweet, Uid, Tweet}.
+    TweetWithHashTag = generateRandomTweets(Uid, PPid, NumNodes),
+    TweetWithMention = generateTweetWithMention(Uid,NumNodes,TweetWithHashTag),
+    PPid ! {postTweet, Uid, TweetWithMention}.
 
-goOffline(PPid, Uid) ->
-    PPid ! {go_offline, Uid}.
+generateTweetWithMention(Uid,NumNodes,TweetWithHashTag)->
+    ChooseMention=rand:uniform(2),
+    case ChooseMention==1 of
+        true->
+            User=generateRandomUser(Uid,NumNodes),
+            User2=integer_to_list(User),
+            Mention2 = string:concat("@", User2),
+            Mention = string:concat(Mention2, " "),
+            NewString=string:concat(Mention, TweetWithHashTag),
+            NewString;
+        false->
+            TweetWithHashTag
+    end.
+            
+generateRandomUser(Uid,NumNodes)->
+    ChooseRandomUser=rand:uniform(NumNodes),
+    case ChooseRandomUser == Uid of
+        true ->
+            generateRandomUser(Uid,NumNodes);
+        false ->
+            ChooseRandomUser
+    end.
 
-goOnline(PPid, Uid) ->
-    PPid ! {go_online, Uid}.
 
-assignFollowers(Uid, PPid, NumNodes) ->
-    NumFollowers = rand:uniform(NumNodes - 2) + 1,
-    List = [rand:uniform(NumNodes) || _ <- lists:seq(1, NumFollowers)],
-    List2 = checkList(List, Uid),
-    Set = ordsets:from_list(List2),
-    FollowerList = ordsets:to_list(Set),
-    PPid ! {setFollowers, Uid, FollowerList}.
 
 generateRandomTweets(Uid, PPid, NumNodes) ->
     WordList = ["one", "life", "one", "love", "one", "chance", "covfefe"],
@@ -131,6 +143,20 @@ generateTweet(WordList, String, S, Length, List) ->
         false ->
             String
     end.
+
+goOffline(PPid, Uid) ->
+    PPid ! {go_offline, Uid}.
+
+goOnline(PPid, Uid) ->
+    PPid ! {go_online, Uid}.
+
+assignFollowers(Uid, PPid, NumNodes) ->
+    NumFollowers = rand:uniform(NumNodes - 2) + 1,
+    List = [rand:uniform(NumNodes) || _ <- lists:seq(1, NumFollowers)],
+    List2 = checkList(List, Uid),
+    Set = ordsets:from_list(List2),
+    FollowerList = ordsets:to_list(Set),
+    PPid ! {setFollowers, Uid, FollowerList}.
 
 checkList(List, Uid) ->
     Bool = lists:member(Uid, List),
