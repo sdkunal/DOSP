@@ -1,5 +1,5 @@
 -module(server).
--import(client, [initiateUser/3, startSimulation/3, generateRandomTweets/3, generateTweet/5]).
+-import(client, [initiateUser/3, startSimulation/3]).
 -import(lists, [nth/2, append/1]).
 -export([
     start/2,
@@ -34,7 +34,6 @@ generate(S, E, PPid) ->
 simulator(List, HashTags) ->
     receive
         {addFollowers, FollowUid, Uid} ->
-            % io:format("in simulator: ~p ~n", [self()]),
             P = nth(Uid, List),
             FollowerList = P#user.followers,
             CheckMember = lists:member(FollowUid, FollowerList),
@@ -90,21 +89,25 @@ simulator(List, HashTags) ->
                     % io:format("List without hashtags: ~p ~n", [List2]),
                     simulator(List2, HashTags)
             end,
-            ContainsMention=string:chr(Tweet,$@),
+            ContainsMention = string:chr(Tweet, $@),
             case ContainsMention =/= 0 of
-                true->
-                    Start1=ContainsMention+1,
-                    End1=string:chr(Tweet,$ ),
-                    MentionedUser=string:substr(Tweet,Start1,End1-1),
-                    UserMentioned=integer_to_list(MentionedUser),
-                    List3=postMention(List2,UserMentioned,Tweet),
-                    simulator(List3,HashTags);
-                false->
-                    simulator(List2,HashTags)
-            end;  
+                true ->
+                    Start1 = ContainsMention + 1,
+                    End1 = string:chr(Tweet, $\s),
+                    MentionedUser = string:substr(Tweet, Start1, End1 - 1),
+                    UserMentioned = integer_to_list(MentionedUser),
+                    List3 = postMention(List2, UserMentioned, Tweet),
+                    simulator(List3, HashTags);
+                false ->
+                    simulator(List2, HashTags)
+            end;
         {display_hashtags, Hash} ->
             TweetList = maps:get(Hash, HashTags),
             io:format("Tweets with ~p hashtags: ~p ~n", [Hash, TweetList]),
+            simulator(List, HashTags);
+        {display_mentions, Uid} ->
+            MentionList = displayMentions(Uid, List),
+            io:format("User mentions for user ~p are: ~p ~n", [Uid, MentionList]),
             simulator(List, HashTags);
         {get_feed, Uid} ->
             Feed = displayFeed(Uid, List),
@@ -149,7 +152,6 @@ postMention(List, Uid, Tweet) ->
     P1 = P#user{mentions = lists:append(MentionList, [Tweet])},
     replacenth(List, Uid, P1).
 
-
 reTweeting(Uid, List, RandTweet) ->
     P = nth(Uid, List),
     TweetList = P#user.tweet,
@@ -171,6 +173,10 @@ addNewFollower(Uid, FollowUid, List) ->
 displayFeed(Uid, List) ->
     P = nth(Uid, List),
     P#user.feed.
+
+displayMentions(Uid, List) ->
+    P = nth(Uid, List),
+    P#user.mentions.
 
 distributeTweet(List, Uid, Tweet, FollowerList, S, Length) ->
     case S =< Length of
@@ -251,7 +257,7 @@ generateActors(S, E, L, PPid) ->
                 S + 1, E, lists:append([L, [spawn(client, initiateUser, [S, PPid, E])]]), PPid
             );
         false ->
-            io:format("All actors generated ~n"),
+            io:format("All actors generated~n"),
             L
     end.
 

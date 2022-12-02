@@ -1,6 +1,6 @@
 -module(client).
 -import(server, [start/2]).
--export([initiateUser/3, startSimulation/3, generateRandomTweets/3, generateTweet/5]).
+-export([initiateUser/3, startSimulation/3]).
 
 initiateUser(Uid, PPid, NumNodes) ->
     PPid ! {makeOnline, Uid, self()},
@@ -8,10 +8,16 @@ initiateUser(Uid, PPid, NumNodes) ->
 
 startSimulation(Actor_List, PPid, S) ->
     Ops_List = [
-        "tweet", "go_offline", "go_online", "follow", "query_hashtags", "get_feed", "retweet"
+        "tweet",
+        "go_offline",
+        "go_online",
+        "follow",
+        "query_hashtags",
+        "query_mentions",
+        "get_feed",
+        "retweet"
     ],
     HashTagList = ["tag1", "tag2", "tag3", "tag4", "tag5"],
-    % io:format("starting simulation: ~n", []),
     case S =< 20 of
         true ->
             NumNodes = length(Actor_List),
@@ -42,17 +48,24 @@ startSimulation(Actor_List, PPid, S) ->
                                                 true ->
                                                     SelectHashTag = rand:uniform(5),
                                                     Hash = lists:nth(SelectHashTag, HashTagList),
-                                                    query_hashtags(Hash, PPid);
+                                                    queryHashtags(Hash, PPid);
                                                 false ->
-                                                    case Operation == "get_feed" of
+                                                    case Operation == "query_mentions" of
                                                         true ->
-                                                            get_feed(RandomUid, PPid);
+                                                            queryMentions(RandomUid, PPid);
                                                         false ->
-                                                            case Operation == "retweet" of
+                                                            case Operation == "get_feed" of
                                                                 true ->
-                                                                    reTweet(RandomUid, PPid);
+                                                                    queryFeed(RandomUid, PPid);
                                                                 false ->
-                                                                    ""
+                                                                    case Operation == "retweet" of
+                                                                        true ->
+                                                                            reTweet(
+                                                                                RandomUid, PPid
+                                                                            );
+                                                                        false ->
+                                                                            ""
+                                                                    end
                                                             end
                                                     end
                                             end
@@ -77,43 +90,44 @@ followUser(NumNodes, FollowUid, Uid, PPid) ->
             PPid ! {addFollowers, FollowUid, Uid}
     end.
 
-get_feed(Uid, PPid) ->
+queryFeed(Uid, PPid) ->
     PPid ! {get_feed, Uid}.
 
-query_hashtags(Hash, PPid) ->
+queryMentions(Uid, PPid) ->
+    PPid ! {display_mentions, Uid}.
+
+queryHashtags(Hash, PPid) ->
     PPid ! {display_hashtags, Hash}.
 
 makeTweet(PPid, Uid, NumNodes) ->
-    TweetWithHashTag = generateRandomTweets(Uid, PPid, NumNodes),
-    TweetWithMention = generateTweetWithMention(Uid,NumNodes,TweetWithHashTag),
+    TweetWithHashTag = generateRandomTweets(),
+    TweetWithMention = generateTweetWithMention(Uid, NumNodes, TweetWithHashTag),
     PPid ! {postTweet, Uid, TweetWithMention}.
 
-generateTweetWithMention(Uid,NumNodes,TweetWithHashTag)->
-    ChooseMention=rand:uniform(2),
-    case ChooseMention==1 of
-        true->
-            User=generateRandomUser(Uid,NumNodes),
-            User2=integer_to_list(User),
+generateTweetWithMention(Uid, NumNodes, TweetWithHashTag) ->
+    ChooseMention = rand:uniform(2),
+    case ChooseMention == 1 of
+        true ->
+            User = generateRandomUser(Uid, NumNodes),
+            User2 = integer_to_list(User),
             Mention2 = string:concat("@", User2),
             Mention = string:concat(Mention2, " "),
-            NewString=string:concat(Mention, TweetWithHashTag),
+            NewString = string:concat(Mention, TweetWithHashTag),
             NewString;
-        false->
+        false ->
             TweetWithHashTag
     end.
-            
-generateRandomUser(Uid,NumNodes)->
-    ChooseRandomUser=rand:uniform(NumNodes),
+
+generateRandomUser(Uid, NumNodes) ->
+    ChooseRandomUser = rand:uniform(NumNodes),
     case ChooseRandomUser == Uid of
         true ->
-            generateRandomUser(Uid,NumNodes);
+            generateRandomUser(Uid, NumNodes);
         false ->
             ChooseRandomUser
     end.
 
-
-
-generateRandomTweets(Uid, PPid, NumNodes) ->
+generateRandomTweets() ->
     WordList = ["one", "life", "one", "love", "one", "chance", "covfefe"],
     HashTagList = ["tag1", "tag2", "tag3", "tag4", "tag5"],
     ChooseHashTag = rand:uniform(2),
